@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Star Wars 500% · Job Progress Tracker</title>
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root{--bg:#f5f7fb;--ink:#18243d;--muted:#62718b;--line:#dfe6f1;--blue:#183d89;--navy:#101f42;--gold:#d5aa3b;--white:#fff;--green:#20765c;--red:#ae4354;--shadow:0 12px 36px rgba(20,41,85,.08)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}button,input{font:inherit}a{color:inherit}
+    .top{background:linear-gradient(115deg,#0d1935 0%,#183d89 75%,#204786 100%);color:#fff;padding:25px max(24px,calc((100vw - 1320px)/2));position:relative;overflow:hidden}
+    .top:after{content:"";position:absolute;pointer-events:none;inset:0;background-image:radial-gradient(#fff5 1px,transparent 1px);background-size:36px 36px;opacity:.14}
+    .top-inner{position:relative;z-index:1}.top-line,.title-line,.tools,.section-head,.card-foot,.meta,.filters,.status-line{display:flex;align-items:center;justify-content:space-between;gap:14px}.eyebrow{color:#f3cc71;font-size:11px;letter-spacing:.18em;font-weight:800;text-transform:uppercase}h1{font-size:clamp(28px,3.3vw,44px);letter-spacing:-.04em;line-height:1.1;margin:12px 0 8px}h1 span{font-weight:400;color:#b7c9ed}.sub{color:#c9d5eb;margin:0;max-width:740px}header .btn{background:#ffffff1c;color:#fff;border:1px solid #ffffff55}
+    .wrap{max-width:1368px;margin:auto;padding:25px 24px 70px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat{background:#fff;border:1px solid var(--line);border-radius:15px;padding:17px 19px;box-shadow:var(--shadow);min-height:105px}.stat small{display:block;color:var(--muted);font-weight:700;font-size:12px}.stat strong{font-size:clamp(23px,2.4vw,33px);letter-spacing:-.04em;display:block;margin:5px 0 0;line-height:1.15}.stat.due{background:#fffcf4;border-color:#e8cf8b}.stat.due strong{color:#88631b}.stat .hint{color:var(--muted);font-size:11px;margin-top:3px}
+    .tools{margin:27px 0 8px;flex-wrap:wrap}.tools h2{font-size:20px;margin:0;letter-spacing:-.025em}.status-line{color:var(--muted);font-size:12px;justify-content:flex-start;gap:8px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}.dot.error{background:var(--red)}.right-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .search{width:270px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 12px;outline:none;color:var(--ink)}.search:focus{border-color:#668cce;box-shadow:0 0 0 3px #668cce25}.btn{border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--blue);padding:9px 13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.btn:hover{border-color:#7592c6;background:#f3f6fc}.btn:disabled{opacity:.55;cursor:wait}.filters{justify-content:flex-start;overflow-x:auto;gap:7px;padding:13px 0 7px;margin-bottom:6px}.filter{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:40px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap}.filter.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .section{margin-top:29px;scroll-margin-top:12px}.section-head{align-items:baseline;margin-bottom:13px}.section h2{font-size:21px;margin:0;letter-spacing:-.025em}.section h2 em{font-size:13px;color:var(--muted);font-style:normal;font-weight:600;margin-left:8px}.section .desc{font-size:13px;color:var(--muted);margin:0}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.grid.featured{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 20px #12284a0b;min-width:0;display:flex;flex-direction:column}.featured .card{box-shadow:var(--shadow);border-color:#c5d6ef}.visual{position:relative;aspect-ratio:1.3;background:linear-gradient(135deg,#e9eef8,#dfe8f4);overflow:hidden}.featured .visual{aspect-ratio:1.42}.visual img{width:100%;height:100%;object-fit:contain;display:block;padding:7px;transition:transform .2s}.card:hover img{transform:scale(1.045)}.fallback{height:100%;display:grid;place-items:center;color:#8da0be;font-size:28px;font-weight:800;letter-spacing:.2em}.badge{position:absolute;top:10px;left:10px;background:#f9fcffeb;border:1px solid #e4ebf2;border-radius:40px;padding:4px 10px;color:#234276;font-size:11px;font-weight:800;box-shadow:0 2px 10px #1b37601f}.featured .badge{background:#d9aa3b;color:#1f2a3b;border:0}.card-main{padding:14px 15px 11px;flex:1}.card h3{font-size:15px;line-height:1.28;margin:0 0 10px;min-height:38px}.featured .card h3{font-size:18px}.meta{justify-content:flex-start;flex-wrap:wrap;gap:5px}.pill{font-size:11px;color:#415471;background:#edf2f8;border-radius:30px;padding:3px 8px;font-weight:700}.pill.unpaid{background:#fff0e7;color:#9b5220}.pill.paid{background:#e7f4ee;color:#20765c}.note{font-size:12px;color:var(--muted);margin:9px 0 0;overflow-wrap:anywhere}.card-foot{padding:11px 15px;border-top:1px solid #edf0f5;align-items:center}.card-foot strong{font-size:17px}.card-foot .unknown{font-size:12px;color:var(--muted);font-weight:500}.model-link{font-size:12px;font-weight:750;color:var(--blue);text-decoration:none}.model-link:hover{text-decoration:underline}.empty{background:white;border:1px dashed var(--line);padding:22px;border-radius:12px;color:var(--muted)}.hidden{display:none!important}.error-box{padding:18px;border-radius:12px;background:#fff2f0;color:#8b3635;margin-top:18px;border:1px solid #efc3bd}
+    .footer{border-top:1px solid var(--line);font-size:12px;color:var(--muted);margin-top:48px;padding-top:16px}.loading{padding:38px;text-align:center;color:var(--muted)}
+    .auth-actions{display:flex;gap:8px;align-items:center}.auth-actions .btn{font-size:12px}.edit-btn{border:0;border-radius:8px;background:#eaf0fb;color:var(--blue);font-size:12px;font-weight:700;padding:7px 10px;cursor:pointer}.edit-btn:hover{background:#dbe6fb}.card-foot{flex-wrap:wrap}.card-foot .edit-btn{margin-left:auto}
+    dialog{border:1px solid var(--line);border-radius:18px;max-width:min(560px,calc(100vw - 28px));width:100%;box-shadow:0 24px 80px #10224155;padding:25px;color:var(--ink)}dialog::backdrop{background:#0a1733ad}.edit-head{font-weight:800;font-size:23px;line-height:1.2;margin:0 0 6px}.edit-sub{font-size:13px;color:var(--muted);margin:0 0 19px}.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.edit-grid label{display:block;color:var(--muted);font-size:12px;font-weight:700}.edit-grid select,.edit-grid input,.edit-grid textarea{display:block;width:100%;margin-top:5px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);padding:10px;font-size:14px}.edit-grid .wide{grid-column:1/-1}.edit-grid textarea{min-height:75px;resize:vertical}.edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.edit-actions button{min-width:84px}.save-btn{background:var(--blue);color:#fff}.save-btn:hover{background:#244f9c;color:#fff}.form-error{font-size:12px;color:#9c303b;margin:10px 0 0;min-height:18px}
+    @media(max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.top{padding:24px}.wrap{padding:20px 18px 55px}.grid,.grid.featured{grid-template-columns:repeat(2,minmax(0,1fr))}.top-line{align-items:flex-start}.tools{align-items:flex-start}.right-tools{width:100%}.search{flex:1;min-width:170px}}
+    @media(max-width:510px){.grid,.grid.featured{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:12px;min-height:94px}.stat strong{font-size:23px}.section-head{display:block}.top-line .btn{font-size:11px}.card h3{min-height:unset}.search{width:100%}.right-tools .btn{flex:1;justify-content:center}}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="top-inner">
+    <div class="top-line"><span class="eyebrow">500% Model Collection · Live Sheet View</span><div class="auth-actions"><a id="sheetLink" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open spreadsheet ↗</a><button class="btn" id="signIn" type="button">Connect Google</button><button class="btn hidden" id="signOut" type="button">Disconnect</button></div></div>
+    <div class="title-line"><div><h1>Job Progress <span>Tracker</span></h1><p class="sub">Every figure in one place. Current builds first, upcoming priorities next, and finished projects in their own gallery.</p></div></div>
+  </div></header>
+  <main class="wrap">
+    <div class="stats" aria-label="Project totals">
+      <div class="stat"><small>Projects in list</small><strong id="count">—</strong><div class="hint">All models on the sheet</div></div>
+      <div class="stat"><small>Total cost so far</small><strong id="total">—</strong><div class="hint">All prices entered</div></div>
+      <div class="stat"><small>Remaining balance</small><strong id="remaining">—</strong><div class="hint">Priced projects marked unpaid</div></div>
+      <div class="stat due"><small>Due now</small><strong id="due">—</strong><div class="hint">Completed and unpaid only</div></div>
+    </div>
+    <div class="tools"><div><h2>Project board</h2><div class="status-line" role="status"><span id="statusDot" class="dot"></span><span id="status">Connecting to the spreadsheet…</span></div></div><div class="right-tools"><input class="search" id="search" type="search" placeholder="Search figures or notes" aria-label="Search figures or notes"><button id="refresh" class="btn" type="button">↻ Refresh</button></div></div>
+    <nav id="filters" class="filters" aria-label="Filter project groups"></nav>
+    <div id="content"><div class="loading">Connect your Google account to load the project board.</div></div>
+    <div class="footer">Information comes from the Star Wars Lego Figures at 500% spreadsheet. Images link to their MakerWorld model pages. The page refreshes every minute.</div>
+  </main>
+  <dialog id="editor" aria-labelledby="editTitle"><form id="editForm" method="dialog">
+    <h2 class="edit-head" id="editTitle">Edit project</h2><p class="edit-sub">Changes save directly to the Google Sheet.</p>
+    <div class="edit-grid">
+      <label>Selected<select name="selected"><option value="">Unspecified</option><option>Yes</option><option>No</option></select></label>
+      <label>Priority<input name="priority" list="priorityOptions" placeholder="e.g. In Progress"><datalist id="priorityOptions"><option value="In Progress"><option value="First"><option value="Second"><option value="Mid"><option value="Completed"></datalist></label>
+      <label>Price ($)<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered"></label>
+      <label>Price agreed<select name="agreed"><option value="">Unspecified</option><option>Yes</option><option>No</option></select></label>
+      <label>Paid<select name="paid"><option value="">Unspecified</option><option>Yes</option><option>No</option></select></label>
+      <label class="wide">Note<textarea name="note" maxlength="500"></textarea></label>
+    </div>
+    <p id="formError" class="form-error" role="alert"></p><div class="edit-actions"><button class="btn" id="cancelEdit" type="button">Cancel</button><button class="btn save-btn" id="saveEdit" type="submit">Save changes</button></div>
+  </form></dialog>
+  <script src="app.js" defer></script>
+</body>
+</html>
