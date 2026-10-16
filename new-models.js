@@ -27,6 +27,18 @@ window.ModelSpotlight = (() => {
   function create(api){
     let sheetId=null;
     const range="'"+TAB+"'!A2:C";
+    async function readColumnDates(items){
+      // Fetch the authoritative column here as well as in app.js. This keeps
+      // spotlight dates correct even if a browser still has the earlier app.
+      const query=new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE',dateTimeRenderOption:'SERIAL_NUMBER'});
+      query.append('ranges',"'Sheet1'!A2:A");query.append('ranges',"'Sheet1'!I2:I");
+      const batch=await api('/values:batchGet?'+query.toString());
+      const names=batch.valueRanges?.[0]?.values||[],dates=batch.valueRanges?.[1]?.values||[];
+      for(const item of items){const index=item.row-2;
+        if(String(names[index]?.[0]||'').trim()!==item.name)throw Error('The model rows changed while refreshing. Refresh the board again.');
+        item.rawAddedAt=dates[index]?.[0]??'';item.addedAt=sheetDate(item.rawAddedAt);
+      }
+    }
     async function read(){
       const reply=await api('/values/'+encodeURIComponent("'"+TAB+"'!A1:C")+'?valueRenderOption=UNFORMATTED_VALUE');
       if(reply.values?.[0]?.[0]!=='Model key'||reply.values?.[0]?.[2]!=='Date added')throw Error('The reserved added-date tab has a different layout. Rename that tab before enabling spotlight tracking.');
@@ -61,6 +73,7 @@ window.ModelSpotlight = (() => {
       }
     }
     async function sync(items){
+      await readColumnDates(items);
       if(sheetId===null)await initialize(items);
       const records=await read(),pending=new Map();
       apply(items,records);

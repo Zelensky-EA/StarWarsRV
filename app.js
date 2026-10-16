@@ -1,5 +1,6 @@
 'use strict';
 const CONFIG = window.TRACKER_CONFIG;
+const TRACKER_BUILD='2026.10.16.2';
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 const money = new Intl.NumberFormat('en-US', {style:'currency',currency:'USD'});
 const state = {token:'',expires:0,client:null,data:null,view:'all',query:'',busy:false,saving:false,sheetId:null,current:null};
@@ -94,7 +95,7 @@ async function load(){
     try{await spotlight.sync(items);}catch(error){dateWarning=' · New-model dates unavailable: '+error.message;}
     const totals=items.reduce((out,item)=>{if(item.price!==null){out.total+=item.price;if(item.paid.toLowerCase()==='no'){out.remaining+=item.price;if(item.priority.toLowerCase()==='completed')out.due+=item.price;}}return out;},{total:0,remaining:0,due:0});
     state.data={items,totals,updated:Date.now()};render();
-    setStatus('Live sheet · updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+dateWarning,!!dateWarning);
+    setStatus('Live sheet · updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · '+items.filter(isNewModel).length+' new models · v'+TRACKER_BUILD+dateWarning,!!dateWarning);
   }catch(err){setStatus(err.message,true);if(!state.data)$('content').replaceChildren(el('div','error-box',err.message));}
   finally{state.busy=false;$('refresh').disabled=false;}
 }

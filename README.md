@@ -8,6 +8,8 @@ Models recorded within the last **30 calendar days** appear in a gold **New Mode
 
 **Sheet1 column I is the primary Date added field.** Existing dates there immediately control the spotlight, including Google Sheets date cells, `YYYY-MM-DD`, and `M/D/YYYY` text. No re-entry is necessary. The card editor saves Date added into column I and keeps the hidden log consistent. Existing dates in I override any automatically detected date.
 
+For the column I fix, replace **all three** `index.html`, `app.js`, and `new-models.js`. The HTML uses versioned script URLs to refresh cached code. The board's status line shows `v2026.10.16.2` and the number of new models, making this update easy to identify. The spotlight module also reads column I independently to support an older cached main script.
+
 The first successful connection using an editor account creates a hidden `_TrackerModelDates` tab in the existing spreadsheet. Models already present without a column I date become the starting inventory with unknown added dates, so they are not incorrectly marked as new. Use a model's **Edit → Date added** field to backfill a model that was recently added. The original Sheet1 and Sheet4 columns keep their current layout.
 
 After this first setup, a previously unseen model is automatically dated when the tracker next detects it. The date is saved in the shared spreadsheet, so other browsers see the same spotlight. Detection happens while the tracker is connected and refreshing; it cannot recover the exact insertion date of a model added while the tracker was closed. Model names identify entries; renaming a model is treated as a new entry. Removing a model and adding the same name again retains its original recorded date unless you change Date added.
