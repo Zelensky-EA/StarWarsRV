@@ -42,6 +42,7 @@
     dialog{background:#1a2029;border:1px solid #a14149;border-top:4px solid #db3d46;border-radius:4px;color:#f3f3f5;box-shadow:0 28px 85px #000c}dialog::backdrop{background:#05070dcc;backdrop-filter:blur(3px)}.edit-head{font-family:Impact,"Arial Narrow",Arial,sans-serif;text-transform:uppercase;font-weight:500;letter-spacing:.07em;font-size:28px}.edit-sub,.edit-grid label{color:#c2c8d0}.edit-grid select,.edit-grid input,.edit-grid textarea{background:#10151c;border:1px solid #59616d;border-radius:3px;color:#f4f5f7;color-scheme:dark}.edit-grid input::placeholder{color:#989fab}.edit-grid select:focus,.edit-grid input:focus,.edit-grid textarea:focus{outline:1px solid #f46269;border-color:#f46269}.save-btn{background:#b92935;border-color:#ec4d58;color:white}.save-btn:hover{background:#dc3944;border-color:#ff616a;color:white}.form-error{color:#ff979c}
     @media(max-width:760px){.top{min-height:0;padding:0 24px}.top-inner{padding:17px 0 30px}.top-line{align-items:flex-start;flex-wrap:wrap}.auth-actions{flex-wrap:wrap}.hero{min-height:185px;padding-right:135px}.hero-graphic{width:150px;height:150px;right:-8px;top:22px;opacity:.45}.sub{font-size:12px}.wrap{padding:22px 18px 60px}.tools{margin-top:30px}}
     @media(max-width:510px){.top{padding:0 18px}.crest{width:38px;height:38px}.eyebrow{letter-spacing:.14em;font-size:9px}.hero{padding:18px 0 0;min-height:190px}.hero-graphic{right:-32px;top:8px;opacity:.18}.sub{font-size:12px}.stat{padding:13px;min-height:103px}.stat strong{font-size:26px}.stat small{font-size:9px;letter-spacing:.08em}.section-head{display:flex}.section h2{font-size:21px}}
+    .new-model-spotlight{border-top:2px solid #d7ae58;background:linear-gradient(135deg,#32261970,#161b2380);padding:18px;border-radius:3px}.new-model-spotlight h2{color:#ffe3a1}.new-model-spotlight h2:before{color:#e7bd69}.card.new-model{border-color:#bd9444;box-shadow:0 0 0 1px #b58b3428,0 12px 28px #0005}.new-model-badge{position:absolute;bottom:10px;left:9px;right:9px;z-index:2;background:#e4b860;color:#211a0e;border:1px solid #ffe2a0;padding:7px 9px;border-radius:2px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;text-align:center;box-shadow:0 3px 14px #0007}.added-date{font-size:11px;color:#e7c581;margin:10px 0 0}.edit-grid label small{display:block;font-weight:400;font-size:11px;line-height:1.4;margin-top:5px;color:#aeb7c5}@media(max-width:510px){.new-model-spotlight{padding:12px}}
   </style>
 </head>
 <body>
@@ -69,10 +70,12 @@
       <label>Price ($)<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered"></label>
       <label>Price agreed<select name="agreed"><option value="">Unspecified</option><option>Yes</option><option>No</option></select></label>
       <label>Paid<select name="paid"><option value="">Unspecified</option><option>Yes</option><option>No</option></select></label>
+      <label>Date added<input name="addedAt" type="date"><small>Spotlight lasts 30 days from this date.</small></label>
       <label class="wide">Note<textarea name="note" maxlength="500"></textarea></label>
     </div>
     <p id="formError" class="form-error" role="alert"></p><div class="edit-actions"><button class="btn" id="cancelEdit" type="button">Cancel</button><button class="btn save-btn" id="saveEdit" type="submit">Save changes</button></div>
   </form></dialog>
+  <script src="new-models.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

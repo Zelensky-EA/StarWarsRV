@@ -4,6 +4,8 @@ const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 const money = new Intl.NumberFormat('en-US', {style:'currency',currency:'USD'});
 const state = {token:'',expires:0,client:null,data:null,view:'all',query:'',busy:false,saving:false,sheetId:null,current:null};
 const $ = id => document.getElementById(id);
+const spotlight=window.ModelSpotlight.create(api);
+const isNewModel=item=>window.ModelSpotlight.isNew(item.addedAt);
 const groups = [
   {key:'inprogress',title:'In progress',description:'The builds underway right now'},
   {key:'first',title:'First priority',description:'Projects next in line'},
@@ -88,29 +90,34 @@ async function load(){
         price:typeof row[4]==='number'?row[4]:null,agreed:String(row[5]||''),paid:String(row[6]||''),note:String(row[7]||''),
         image:meta.image||'',model:meta.model||''});
     });
+    let dateWarning='';
+    try{await spotlight.sync(items);}catch(error){dateWarning=' · New-model dates unavailable: '+error.message;}
     const totals=items.reduce((out,item)=>{if(item.price!==null){out.total+=item.price;if(item.paid.toLowerCase()==='no'){out.remaining+=item.price;if(item.priority.toLowerCase()==='completed')out.due+=item.price;}}return out;},{total:0,remaining:0,due:0});
     state.data={items,totals,updated:Date.now()};render();
-    setStatus('Live sheet · updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),false);
+    setStatus('Live sheet · updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+dateWarning,!!dateWarning);
   }catch(err){setStatus(err.message,true);if(!state.data)$('content').replaceChildren(el('div','error-box',err.message));}
   finally{state.busy=false;$('refresh').disabled=false;}
 }
 function drawFilters(counts){
   const root=$('filters');root.replaceChildren();
   [{key:'all',title:'All projects',n:state.data.items.length},
+    {key:'new',title:'New models',n:state.data.items.filter(isNewModel).length},
     {key:'active',title:'Active & planned',n:state.data.items.length-counts.completed-counts.ideas},
     {key:'completed',title:'Completed',n:counts.completed},{key:'ideas',title:'Ideas',n:counts.ideas}]
     .forEach(option=>{const btn=el('button','filter'+(state.view===option.key?' active':''),option.title+'  '+option.n);btn.type='button';btn.setAttribute('aria-pressed',String(state.view===option.key));btn.onclick=()=>{state.view=option.key;render();};root.append(btn);});
 }
 function card(item,key){
-  const article=el('article','card');const visual=el('div','visual');
+  const recent=isNewModel(item),article=el('article','card'+(recent?' new-model':''));const visual=el('div','visual');
   if(item.image){const img=el('img');img.src=item.image;img.alt='Preview of '+item.name;img.loading=key==='inprogress'?'eager':'lazy';img.referrerPolicy='no-referrer';img.onerror=()=>img.replaceWith(el('div','fallback','500%'));visual.append(img);}else visual.append(el('div','fallback','500%'));
   const label=key==='other'?item.priority:(key==='inprogress'?'In progress':key==='completed'?'Completed':key==='first'?'First priority':key==='second'?'Second priority':key==='mid'?'Mid priority':key==='selected'?'Selected':'Idea');
-  visual.append(el('span','badge',label));article.append(visual);
+  visual.append(el('span','badge',label));
+  if(recent)visual.append(el('span','new-model-badge','New Model Added'));
+  article.append(visual);
   const main=el('div','card-main');main.append(el('h3','',item.name));const meta=el('div','meta');
   if(item.paid==='No')meta.append(el('span','pill unpaid','Unpaid'));else if(item.paid==='Yes')meta.append(el('span','pill paid','Paid'));
   if(item.agreed==='Yes')meta.append(el('span','pill','Price agreed'));else if(item.agreed==='No')meta.append(el('span','pill','Price not agreed'));
   if(item.selected.toLowerCase()==='yes')meta.append(el('span','pill','Selected'));
-  main.append(meta);if(item.note)main.append(el('p','note',item.note));article.append(main);
+  main.append(meta);if(recent)main.append(el('p','added-date','Added '+new Date(item.addedAt+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})));if(item.note)main.append(el('p','note',item.note));article.append(main);
   const foot=el('div','card-foot');foot.append(el('strong',item.price===null?'unknown':'',item.price===null?'Price not entered':money.format(item.price)));
   if(item.model){const link=el('a','model-link','View model ↗');link.href=item.model;link.target='_blank';link.rel='noopener noreferrer';foot.append(link);}
   const edit=el('button','edit-btn','Edit');edit.type='button';edit.setAttribute('aria-label','Edit '+item.name);edit.onclick=()=>openEditor(item);foot.append(edit);
@@ -120,8 +127,14 @@ function render(){
   if(!state.data)return;const data=state.data;
   $('count').textContent=data.items.length.toLocaleString();$('total').textContent=money.format(data.totals.total);$('remaining').textContent=money.format(data.totals.remaining);$('due').textContent=money.format(data.totals.due);
   const counts=Object.fromEntries(groups.map(g=>[g.key,0]));data.items.forEach(item=>counts[groupFor(item)]++);drawFilters(counts);
-  const visible=data.items.filter(item=>{const g=groupFor(item);if(state.view==='completed'&&g!=='completed')return false;if(state.view==='ideas'&&g!=='ideas')return false;if(state.view==='active'&&(g==='completed'||g==='ideas'))return false;return (item.name+' '+item.note+' '+item.priority).toLowerCase().includes(state.query);});
+  const visible=data.items.filter(item=>{const g=groupFor(item);if(state.view==='new'&&!isNewModel(item))return false;if(state.view==='completed'&&g!=='completed')return false;if(state.view==='ideas'&&g!=='ideas')return false;if(state.view==='active'&&(g==='completed'||g==='ideas'))return false;return (item.name+' '+item.note+' '+item.priority).toLowerCase().includes(state.query);});
   const root=$('content');root.replaceChildren();let count=0;
+  const recent=visible.filter(isNewModel).sort((a,b)=>b.addedAt.localeCompare(a.addedAt)||a.name.localeCompare(b.name));
+  if(state.view==='all'&&recent.length){
+    const section=el('section','section new-model-spotlight'),head=el('div','section-head'),title=el('h2','','New Model Added');title.append(el('em','',String(recent.length)));
+    head.append(title,el('p','desc','New arrivals in the last 30 days'));section.append(head);
+    const grid=el('div','grid');recent.forEach(item=>grid.append(card(item,groupFor(item))));section.append(grid);root.append(section);
+  }
   groups.forEach(group=>{const list=visible.filter(item=>groupFor(item)===group.key);if(!list.length)return;list.sort((a,b)=>a.name.localeCompare(b.name));count+=list.length;
     const section=el('section','section');section.id='group-'+group.key;const head=el('div','section-head');const title=el('h2','',group.title);title.append(el('em','',String(list.length)));head.append(title,el('p','desc',group.description));section.append(head);
     const grid=el('div','grid'+(group.key==='inprogress'?' featured':''));list.forEach(item=>grid.append(card(item,group.key)));section.append(grid);root.append(section);
@@ -132,6 +145,7 @@ function openEditor(item){
   state.current=item;const form=$('editForm');$('editTitle').textContent=item.name;$('formError').textContent='';
   for(const key of ['selected','priority','agreed','paid','note'])form.elements[key].value=item[key];
   form.elements.price.value=item.price===null?'':String(item.price);
+  form.elements.addedAt.value=item.addedAt||'';form.elements.addedAt.max=window.ModelSpotlight.today();
   $('editor').showModal();
 }
 async function saveEditor(event){
@@ -148,7 +162,9 @@ async function saveEditor(event){
     {col:6,old:item.paid,value:form.elements.paid.value},
     {col:7,old:item.note,value:form.elements.note.value.trim()}
   ].filter(change=>change.old!==change.value);
-  if(!changes.length){$('editor').close();return;}
+  const addedAt=form.elements.addedAt.value,dateChanged=addedAt!==(item.addedAt||'');
+  if(addedAt&&(!window.ModelSpotlight.validDate(addedAt)||addedAt>window.ModelSpotlight.today())){$('formError').textContent='Enter a valid date added, today or earlier.';return;}
+  if(!changes.length&&!dateChanged){$('editor').close();return;}
   state.saving=true;$('saveEdit').disabled=true;
   try{
     // Recheck the same row and touched cells immediately before writing, so a
@@ -161,6 +177,7 @@ async function saveEditor(event){
     // Updating only userEnteredValue preserves existing currency formats and
     // the Drive link attached to a priced cell's formatting.
     const requests=changes.map(change=>({updateCells:{start:{sheetId:state.sheetId,rowIndex:item.row-1,columnIndex:change.col},rows:[{values:[{userEnteredValue:change.value===null?{stringValue:''}:typeof change.value==='number'?{numberValue:change.value}:{stringValue:change.value}}]}],fields:'userEnteredValue'}}));
+    if(dateChanged)requests.push(...await spotlight.dateRequests(item,addedAt));
     await api(':batchUpdate',{method:'POST',body:JSON.stringify({requests})});
     $('editor').close();state.current=null;state.saving=false;await load();
   }catch(err){$('formError').textContent=err.message;setStatus('Save failed: '+err.message,true);}
