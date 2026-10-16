@@ -9,6 +9,15 @@ window.ModelSpotlight = (() => {
     const stamp=Date.parse(value+'T00:00:00Z');
     return Number.isFinite(stamp)&&new Date(stamp).toISOString().slice(0,10)===value?value:'';
   };
+  const sheetDate=value=>{
+    if(typeof value==='number'&&Number.isFinite(value)){
+      const stamp=Date.UTC(1899,11,30)+Math.floor(value)*DAY;
+      return Number.isFinite(stamp)&&stamp>=Date.UTC(1900,0,1)&&stamp<=Date.UTC(9999,11,31)?new Date(stamp).toISOString().slice(0,10):'';
+    }
+    const text=String(value??'').trim();if(validDate(text))return text;
+    const us=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    return us?validDate(us[3]+'-'+us[1].padStart(2,'0')+'-'+us[2].padStart(2,'0')):'';
+  };
   const isNew = (value,now=today()) => {
     if(!validDate(value)||!validDate(now))return false;
     const age=(Date.parse(now+'T00:00:00Z')-Date.parse(value+'T00:00:00Z'))/DAY;
@@ -64,15 +73,19 @@ window.ModelSpotlight = (() => {
       }
       return apply(items,records);
     }
-    function apply(items,records){for(const item of items)item.addedAt=records.get(keyFor(item))?.date||'';return items;}
+    function apply(items,records){for(const item of items){
+      item.logAddedAt=records.get(keyFor(item))?.date||'';
+      item.addedAt=item.rawAddedAt!==undefined&&item.rawAddedAt!==null&&item.rawAddedAt!==''?sheetDate(item.rawAddedAt):item.logAddedAt;
+    }return items;}
     async function dateRequests(item,value){
       if(value&&(!validDate(value)||value>today()))throw Error('Enter a valid date added, today or earlier.');
-      if(sheetId===null)throw Error('Added-date tracking is unavailable. Refresh with an editor account and try again.');
+      if(sheetId===null)return [];
       const record=(await read()).get(keyFor(item));
-      if(!record||record.date!==(item.addedAt||''))throw Error('The added date changed. Refresh and reopen this model before saving.');
+      if(!record)return [];
+      if(record.date!==(item.logAddedAt||''))throw Error('The added date changed. Refresh and reopen this model before saving.');
       return record.rows.map(row=>({updateCells:{start:{sheetId,rowIndex:row-1,columnIndex:2},rows:[{values:[{userEnteredValue:{stringValue:value}}]}],fields:'userEnteredValue'}}));
     }
     return {sync,dateRequests};
   }
-  return {create,isNew,today,validDate};
+  return {create,isNew,today,validDate,sheetDate};
 })();

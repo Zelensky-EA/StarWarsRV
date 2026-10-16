@@ -72,8 +72,8 @@ async function load(){
   if(!state.token||state.busy||state.saving)return;
   state.busy=true;$('refresh').disabled=true;setStatus('Refreshing from Google Sheets…',false);
   try{
-    const ranges=[a1('Sheet1')+'!A2:H',a1('Sheet4')+'!A2:D'];
-    const query=new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE'});
+    const ranges=[a1('Sheet1')+'!A2:I',a1('Sheet4')+'!A2:D'];
+    const query=new URLSearchParams({valueRenderOption:'UNFORMATTED_VALUE',dateTimeRenderOption:'SERIAL_NUMBER'});
     ranges.forEach(r=>query.append('ranges',r));
     const tasks=[api('/values:batchGet?'+query.toString())];
     if(state.sheetId===null)tasks.push(api('?fields=sheets.properties(sheetId,title)'));
@@ -88,7 +88,7 @@ async function load(){
       const meta=images.get(name)||{};
       items.push({row:index+2,name,selected:String(row[2]||''),priority:String(row[3]||''),
         price:typeof row[4]==='number'?row[4]:null,agreed:String(row[5]||''),paid:String(row[6]||''),note:String(row[7]||''),
-        image:meta.image||'',model:meta.model||''});
+        rawAddedAt:row[8]??'',addedAt:window.ModelSpotlight.sheetDate(row[8]),image:meta.image||'',model:meta.model||''});
     });
     let dateWarning='';
     try{await spotlight.sync(items);}catch(error){dateWarning=' · New-model dates unavailable: '+error.message;}
@@ -165,19 +165,21 @@ async function saveEditor(event){
   const addedAt=form.elements.addedAt.value,dateChanged=addedAt!==(item.addedAt||'');
   if(addedAt&&(!window.ModelSpotlight.validDate(addedAt)||addedAt>window.ModelSpotlight.today())){$('formError').textContent='Enter a valid date added, today or earlier.';return;}
   if(!changes.length&&!dateChanged){$('editor').close();return;}
+  if(dateChanged)changes.push({col:8,old:item.rawAddedAt??'',value:addedAt?Math.round((Date.parse(addedAt+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000):null});
   state.saving=true;$('saveEdit').disabled=true;
   try{
     // Recheck the same row and touched cells immediately before writing, so a
     // stale open editor does not silently overwrite changes made in the sheet.
-    const check=await api('/values/'+encodeURIComponent(a1('Sheet1')+'!A'+item.row+':H'+item.row)+'?valueRenderOption=UNFORMATTED_VALUE');
+    const check=await api('/values/'+encodeURIComponent(a1('Sheet1')+'!A'+item.row+':I'+item.row)+'?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER');
     const live=check.values?.[0]||[];
     if(String(live[0]||'').trim()!==item.name||changes.some(change=>{
-      const value=live[change.col];return change.col===4?(typeof value==='number'?value:null)!==change.old:String(value||'')!==change.old;
+      const value=live[change.col];return change.col===8?String(value??'')!==String(change.old):change.col===4?(typeof value==='number'?value:null)!==change.old:String(value||'')!==change.old;
     }))throw new Error('This project changed in the spreadsheet. Close this editor, refresh, and try again.');
     // Updating only userEnteredValue preserves existing currency formats and
     // the Drive link attached to a priced cell's formatting.
     const requests=changes.map(change=>({updateCells:{start:{sheetId:state.sheetId,rowIndex:item.row-1,columnIndex:change.col},rows:[{values:[{userEnteredValue:change.value===null?{stringValue:''}:typeof change.value==='number'?{numberValue:change.value}:{stringValue:change.value}}]}],fields:'userEnteredValue'}}));
     if(dateChanged)requests.push(...await spotlight.dateRequests(item,addedAt));
+    if(dateChanged&&addedAt)requests.push({repeatCell:{range:{sheetId:state.sheetId,startRowIndex:item.row-1,endRowIndex:item.row,startColumnIndex:8,endColumnIndex:9},cell:{userEnteredFormat:{numberFormat:{type:'DATE',pattern:'m/d/yyyy'}}},fields:'userEnteredFormat.numberFormat'}});
     await api(':batchUpdate',{method:'POST',body:JSON.stringify({requests})});
     $('editor').close();state.current=null;state.saving=false;await load();
   }catch(err){$('formError').textContent=err.message;setStatus('Save failed: '+err.message,true);}
